@@ -14,28 +14,25 @@ need() { [[ -f "$LOG" ]] || fail "Run init first."; }
 init() { mkdir -p "$DRAFTS" "$GENERATED" "$QUARANTINE" "$AUDIT"; [[ -f "$LOG" ]] || { printf "timestamp\taction\tdetail\n" > "$LOG"; chmod 600 "$LOG"; }; say "Ready: $ROOT"; log init workspace-ready; }
 status() { need; say "Workspace: $ROOT"; say "Drafts: $(find "$DRAFTS" -maxdepth 1 -type f | wc -l)"; say "Generated: $(find "$GENERATED" -maxdepth 1 -type f | wc -l)"; say "Quarantined: $(find "$QUARANTINE" -maxdepth 1 -type f | wc -l)"; log status local-counts; }
 help_menu() { cat <<HELP
-Bri Command Hub
-Your local workbench. Toqi stays in WhatsApp.
+BRI HUB
+Small local helper. Toqi stays in WhatsApp.
 
-START HERE
-  bri-hub status
-  bri-hub new-draft guide-name
-  bri-hub prepare-whatsapp post-name
+USE THESE
+  bri-hub status       Check your workspace
+  bri-hub write NAME   Start a writing draft
+  bri-hub post NAME    Start a WhatsApp caption draft
+  bri-hub card         Make your first-build card
+  bri-hub files        See cards and files made here
 
-CREATE
-  bri-hub create-first-build-card
-  bri-hub list-generated
+TIDY UP
+  bri-hub tidy FILE    Put a generated file aside
+  bri-hub undo FILE    Bring it back
 
-KEEP FILES TIDY
-  bri-hub quarantine filename
-  bri-hub restore filename
+EXTRA
+  bri-hub check-root   Read-only phone diagnostic
 
-CAREFUL LANE
-  bri-hub root-status
-  Read-only diagnostic. Android asks first.
-
-Nothing here sends messages or posts Status updates.
-You review and tap Send in WhatsApp yourself.
+Nothing here sends a message or posts a Status.
+You still review and tap Send in WhatsApp.
 HELP
 }
 new_draft() { need; valid_name "${1:-}" || fail "Use a simple draft name, not a path."; local f="$DRAFTS/$1.txt"; [[ ! -e "$f" ]] || fail "Draft already exists."; umask 077; printf "Title: %s\nStatus: draft\n\nPurpose:\n\nAudience:\n\nKey points:\n\nCall to action:\n" "$1" > "$f"; say "Created: $f"; log new-draft "$1.txt"; }
@@ -48,4 +45,15 @@ list_generated() { need; find "$GENERATED" -maxdepth 1 -type f -printf "%f\n" | 
 move_file() { need; valid_name "${3:-}" || fail "Filename must be a plain name, not a path."; local src="$1/$3" dst="$2/$3"; [[ -f "$src" && ! -L "$src" ]] || fail "Only regular workspace files allowed."; [[ ! -e "$dst" ]] || fail "Destination already has that filename."; mv -- "$src" "$dst"; say "$4 complete: $3"; log "$4" "$3"; }
 root_status() { need; command -v su >/dev/null || fail "No root provider found."; say "Requesting read-only root status."; local out; if ! out=$(su -c "id; getenforce 2>/dev/null || true; uname -r" 2>&1); then say "Root check denied or failed."; log root-status denied; return 1; fi; say "$out"; log root-status read-only; }
 case "${1:-help}" in
-help|-h|--help) help_menu ;; init) init ;; status) status ;; new-draft) new_draft "${2:-}" ;; prepare-whatsapp) whatsapp_draft "${2:-}" ;; create-first-build-card) first_build_card ;; list-generated) list_generated ;; quarantine) move_file "$GENERATED" "$QUARANTINE" "${2:-}" quarantine ;; restore) move_file "$QUARANTINE" "$GENERATED" "${2:-}" restore ;; root-status) root_status ;; *) say "Unknown action: ${1:-}"; say; help_menu ;; esac
+help|-h|--help) help_menu ;;
+init) init ;;
+status) status ;;
+write|new-draft) new_draft "${2:-}" ;;
+post|prepare-whatsapp) whatsapp_draft "${2:-}" ;;
+card|create-first-build-card) first_build_card ;;
+files|list-generated) list_generated ;;
+tidy|quarantine) move_file "$GENERATED" "$QUARANTINE" "${2:-}" tidy ;;
+undo|restore) move_file "$QUARANTINE" "$GENERATED" "${2:-}" undo ;;
+check-root|root-status) root_status ;;
+*) say "Unknown action: ${1:-}"; say; help_menu ;;
+esac
