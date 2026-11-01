@@ -37,6 +37,10 @@ bash install.sh
 ~/.local/bin/bri-hub list-generated
 ```
 
+## Roadmap
+
+See [ROADMAP.md](ROADMAP.md) for the next practical steps and the project boundaries.
+
 ## Project status
 
 First public build. Built by Brian Guna as part of NexVanta’s practical Android and Linux work, with a focus on local-first tools and clear human approval.
